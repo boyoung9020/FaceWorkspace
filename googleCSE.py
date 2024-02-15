@@ -9,7 +9,7 @@ def download_image(image_url, save_path):
             file.write(response.content)
 
 
-def search_and_download_images(search_term, api_key, cse_id, num_images=10):
+def search_and_download_images(search_term, api_key, cse_id, num_images):
     search_url = f"https://www.googleapis.com/customsearch/v1?q={search_term}&cx={cse_id}&key={api_key}&searchType=image&num={num_images}"
     response = requests.get(search_url)
     search_results = response.json()
@@ -20,9 +20,13 @@ def search_and_download_images(search_term, api_key, cse_id, num_images=10):
         download_image(image_url, save_path)
         print(f"Downloaded {save_path}")
 
-# Replace 'YOUR_API_KEY' and 'YOUR_CSE_ID' with your actual Google API key and Custom Search Engine ID
-api_key = 'AIzaSyC9Va0fbqU86JvEOF2-ILwXdwPAf_DTtag'
-cse_id = 'f3a2ae7ae0c6341f4'
-search_term = 'obama'  # Example search term
 
-search_and_download_images(search_term, api_key, cse_id)
+def main():
+    api_key = 'AIzaSyC9Va0fbqU86JvEOF2-ILwXdwPAf_DTtag'
+    cse_id = 'f3a2ae7ae0c6341f4'
+    search_term = input("검색어를 입력하세요: ")
+    num_images = int(input("다운로드할 이미지의 수를 입력하세요: "))
+    search_and_download_images(search_term, api_key, cse_id,  num_images)
+
+if __name__ == "__main__":
+    main()

@@ -1,27 +1,37 @@
 from PIL import Image, ImageDraw
 import face_recognition
+import os
+# 입력 및 출력 디렉토리 경로 설정
+input_dir = "D:/FaceWorkspace/images/"  # 이미지 폴더의 새 경로로 수정
+output_dir = "D:/FaceWorkspace/images2/"  # 결과 이미지를 저장할 새 폴더
 
-# Load the jpg file into a numpy array
-image = face_recognition.load_image_file("two_people.jpg")
+# 입력 디렉토리의 모든 파일 목록 가져오기
+image_files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
 
-# Find all facial features in all the faces in the image
-face_landmarks_list = face_recognition.face_landmarks(image)
+# 모든 이미지에 대해 처리
+for image_file in image_files:
+    # 이미지 파일의 상대 경로 생성
+    image_path = os.path.join(input_dir, image_file)
 
-print("I found {} face(s) in this photograph.".format(len(face_landmarks_list)))
+    # 이미지 파일을 numpy 배열로 로드
+    image = face_recognition.load_image_file(image_path)
 
-# Create a PIL imagedraw object so we can draw on the picture
-pil_image = Image.fromarray(image)
-d = ImageDraw.Draw(pil_image)
+    # 이미지에서 모든 얼굴의 특징 찾기
+    face_landmarks_list = face_recognition.face_landmarks(image)
 
-for face_landmarks in face_landmarks_list:
+    print("Found {} face(s) in {}".format(len(face_landmarks_list), image_file))
 
-    # Print the location of each facial feature in this image
-    for facial_feature in face_landmarks.keys():
-        print("The {} in this face has the following points: {}".format(facial_feature, face_landmarks[facial_feature]))
+    # PIL ImageDraw 객체 생성
+    pil_image = Image.fromarray(image)
+    draw = ImageDraw.Draw(pil_image)
 
-    # Let's trace out each facial feature in the image with a line!
-    for facial_feature in face_landmarks.keys():
-        d.line(face_landmarks[facial_feature], width=5)
+    # 얼굴 특징 그리기
+    for face_landmarks in face_landmarks_list:
+        for facial_feature in face_landmarks.keys():
+            draw.line(face_landmarks[facial_feature], width=5)
 
-# Show the picture
-pil_image.show()
+    # 결과 이미지를 새로운 폴더에 저장
+    output_path = os.path.join(output_dir, image_file)
+    pil_image.save(output_path)
+
+print("모든 이미지 처리가 완료되었습니다.")

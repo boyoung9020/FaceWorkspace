@@ -29,7 +29,7 @@ def save_images(search_term, num_images):
 
     options = webdriver.ChromeOptions()
 
-    options.add_argument('--headless')  
+    #options.add_argument('--headless')  
     options.add_argument('--log-level=3')
     driver = webdriver.Chrome(options=options)
 
@@ -40,7 +40,7 @@ def save_images(search_term, num_images):
 
     num_scrolls =num_images // 20  # 한 번의 스크롤마다 대략 20개의 이미지가 로드됨
     starttime = time.time()
-    print("이미지 로드중(최대 25초)")
+    print("image loading..(maximum 25s)")
     for _ in range(num_scrolls):
         scroll_to_end(driver)
         try:
@@ -48,12 +48,12 @@ def save_images(search_term, num_images):
             more_results_button.click()
             time.sleep(1) 
         except Exception as e:
-            print("이미지 로드 완료")
+            print("image load complete")
             break
     endtime = time.time()
     elapsed_time = endtime - starttime
     elapsed_time_seconds = int(elapsed_time)
-    print("경과 시간:", elapsed_time_seconds, "초")
+    print("total ", elapsed_time_seconds, "s")
 
     img_tags = driver.find_elements(By.XPATH, '//img[contains(@class,"rg_i")]')
     img_urls = [img_tag.get_attribute('src') for img_tag in img_tags]
@@ -67,7 +67,7 @@ def save_images(search_term, num_images):
             with open(os.path.join(images_dir, f'{search_term}_{downloaded_images + 1}.jpg'), 'wb') as handler:
                 handler.write(img_data)
 
-            print(f"다운로드 완료: {search_term}_{downloaded_images + 1}.jpg")
+            print(f"save {search_term}_{downloaded_images + 1}.jpg")
             downloaded_images += 1
         except Exception as e:
             pass
