@@ -59,18 +59,18 @@ def plt_imshow(title='image', img=None, figsize=(8 ,5)):
         plt.xticks([]), plt.yticks([])
         plt.show()
 
-def name_labeling(img, image_path, deleted_image_count):
+def name_labeling(img, image_path, deleted_image_count, removelist):
     deleted_image_count = deleted_image_count
     try:
         if img is not None:  # 이미지가 None이 아닌 경우에만 처리
             image = img.copy()
             face_locations = face_recognition.face_locations(image)
             face_encodings = face_recognition.face_encodings(image, face_locations)
-            if face_locations==[]:
+            if face_locations == []:
+                removelist.append(image_path)
                 os.remove(image_path)
                 print(f"remove {image_path}")
                 deleted_image_count += 1
-
             face_names = []
     
             for face_encoding in face_encodings:
@@ -91,10 +91,10 @@ def name_labeling(img, image_path, deleted_image_count):
                     color = (0, 255, 0)
                 else:
                     color = (0, 0, 255)
+                    removelist.append(image_path)
                     os.remove(image_path)
                     print(f"remove {image_path}")
                     deleted_image_count += 1
-    
                     break
     
                 cv2.rectangle(image, (left, top), (right, bottom), color, 1)
@@ -104,22 +104,23 @@ def name_labeling(img, image_path, deleted_image_count):
                 image = draw_text(image, name, (left + 3,  bottom - 15), (0, 0, 0))
         else:  # 이미지가 None인 경우 처리
             print(f"Error: 이미지가 None입니다. Deleting image: {image_path}")
+            removelist.append(image_path)
             os.remove(image_path)
             print(f"remove {image_path}")
             deleted_image_count += 1
     except RuntimeError as e:
         if 'out of memory' in str(e):
             print(f"Error: {e}. Deleting image: {image_path}")
+            removelist.append(image_path)
             os.remove(image_path)
             print(f"remove {image_path}")
             deleted_image_count += 1
         else:
             raise e
 
-
     # plt_imshow("detect", image, figsize=(24, 15))
 
-    return deleted_image_count
+    return deleted_image_count, removelist
 
 def draw_label(img, coordinates, label):
     image = img.copy()
@@ -138,7 +139,7 @@ def add_known_face(face_image_path, name):
 
     face_image = imread(face_image_path)
     if face_image is None:
-        print("-"*40)
+        # print("-"*40)
         print(f"Failed to load image from {face_image_path}.")
         return
     face_location = face_recognition.face_locations(face_image)
@@ -152,9 +153,27 @@ def add_known_face(face_image_path, name):
     
     known_face_encodings.append(face_encoding)
     known_face_names.append(name)
-    detected_face_image = draw_label(face_image, face_location, name)
 
-    plt_imshow(["Input Image", "Detected Face"], [face_image, detected_face_image])
+    # top, right, bottom, left = face_location
+    # cropped_face = face_image[top:bottom, left:right]
+    # print(cropped_face)
+    
+    # current_directory = os.getcwd()
+    # saved_path = os.path.join(current_directory, f"{name}.jpg")
+
+
+    
+    # cv2.imwrite(saved_path, cropped_face)
+    # success = cv2.imwrite(saved_path, cropped_face)
+    # if success:
+    #     print("이미지가 성공적으로 저장되었습니다.")
+    # else:
+    #     print("이미지 저장에 실패했습니다.")
+
+    detected_face_image = draw_label(face_image, face_location, name)
+    # plt_imshow(["Input Image", "Detected Face"], [face_image, detected_face_image])
+
+    return detected_face_image
 
 
 def imread(filename, flags=cv2.IMREAD_COLOR, dtype=np.uint8):
@@ -182,43 +201,36 @@ def imwrite(filename, img, params=None):
         print(e)
         return False
 
-def select_image_and_show(name):
-    messagebox.showinfo("대표얼굴 선택",f"{name}의 대표 얼굴을 선택해주세요")
+# def select_image_and_show(name):
+#     messagebox.showinfo("대표얼굴 선택",f"{name}의 대표 얼굴을 선택해주세요")
 
-    options = {
-        'title': f'{name}의 대표 얼굴을 선택하세요',  # 대화 상자 제목
-        'filetypes': [('이미지 파일', '*.jpg;*.jpeg;*.png;*.gif')],  
-        'initialdir': f'D:\FaceWorkspace\Person_archive\{name}',
-    }
+#     options = {
+#         'title': f'{name}의 대표 얼굴을 선택하세요', 
+#         'filetypes': [('이미지 파일', '*.jpg;*.jpeg;*.png;*.gif')],  
+#         'initialdir': f'D:\FaceWorkspace\Person_archive\{name}',
+#     }
 
-    file_path = filedialog.askopenfilename(**options)
+#     file_path = filedialog.askopenfilename(**options)
 
-    if file_path:
-        pass
-    else:
-        select_image_and_show(name)
+#     if file_path:
+#         pass
+#     else:
+#         select_image_and_show(name)
 
-    return file_path
+#     return file_path
 
 
-def main(name):
+def main(file_path,name):
     deleted_image_count = 0  # 로컬 변수로 초기화
+    removelist = []
 
     root = tk.Tk()
     root.withdraw()  
     root.attributes('-topmost', True)
 
-    file_path = select_image_and_show(name)
-    add_known_face(file_path,name)
+    # file_path = select_image_and_show(name)
 
-
-    # i = 1
-    # while True:
-    #     try:
-    #         add_known_face(f"./Person_archive/{name}/{name}_{i}.jpg", f"{name}") 
-    #         break 
-    #     except IndexError:
-    #         i += 1  
+    detected_face_image = add_known_face(file_path, name)
 
     directory_path = f'./Person_archive/{name}/'
     image_paths = glob(os.path.join(directory_path, '*.jpg'))
@@ -226,13 +238,10 @@ def main(name):
     image_paths = sorted(image_paths, key=lambda x: (x.split('/')[-1].split('_')[0], int(x.split('/')[-1].split('_')[-1].split('.')[0])))
 
     for image_path in image_paths :
-        # print(f"image_path : {image_path}")
         image = imread(image_path)
-        deleted_image_count = name_labeling(image,image_path,deleted_image_count)  
+        deleted_image_count,removelist = name_labeling(image,image_path,deleted_image_count,removelist)  
 
-    # print("Number of deleted images:", deleted_image_count)
-
-    return deleted_image_count
+    return deleted_image_count,removelist
 
 
 # if __name__ == "__main__":
