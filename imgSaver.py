@@ -5,7 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from PyQt5.QtWidgets import QApplication, QMainWindow, QListWidgetItem, QLabel
 from PyQt5.QtCore import Qt, QThread, pyqtSignal,QSize, Qt
-from qt import Ui_carwling  # Ui_carwling 클래스 임포트
+from qt import Ui_crawling  # Ui_carwling 클래스 임포트
 from tqdm import tqdm
 import face_check
 from PyQt5.QtGui import QPixmap
@@ -71,28 +71,6 @@ class CrawlingThread(QThread):
                     break
                 last_height = new_height
 
-        def select_image_and_show(name):
-            root = tk.Tk()
-            root.withdraw()       
-            root.attributes('-topmost', True)
-            messagebox.showinfo("대표얼굴 선택",f"{name}의 대표 얼굴을 선택해주세요")
-
-            options = {
-                'title': f'{name}의 대표 얼굴을 선택하세요', 
-                'filetypes': [('이미지 파일', '*.jpg;*.jpeg;*.png;*.gif')],  
-                'initialdir': f'D:\FaceWorkspace\Person_archive\{name}',
-            }
-
-            file_path = filedialog.askopenfilename(**options)
-            
-            if file_path:
-                pass
-            else:
-                select_image_and_show(name)
-
-            root.destroy()
-            return file_path
-
 
         def remove_invalid_images(images_dir, name):
             log_message = "\n" +  "이미지 필터링"
@@ -108,12 +86,16 @@ class CrawlingThread(QThread):
                         os.remove(file_path)
                         deleted_count += 1
             log_message += "\n"+"2단계 필터링..(loaded face_cehck.py)"  
-            file_path = select_image_and_show(name)
+ 
 
-            self.detected_image_label.setPixmap(QPixmap(file_path).scaled(self.detected_image_label.width(),self.detected_image_label.height(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
 
-            fcdeleted_count,removelist = face_check.main(file_path,name) 
-
+            self.log_updated.emit("\n" + f"{name}의 얼굴 분석중")
+            representative_image_path = face_check.find_representative_image(name)
+            self.log_updated.emit("분석 완료. 대표 얼굴 지정")
+            self.detected_image_label.setPixmap(QPixmap(representative_image_path).scaled(self.detected_image_label.width(),self.detected_image_label.height(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+                        
+                        
+            fcdeleted_count,removelist = face_check.main(representative_image_path,name) 
 
         
             deleted_count += fcdeleted_count
@@ -123,6 +105,8 @@ class CrawlingThread(QThread):
        
             self.log_updated.emit(log_message)
             self.log_updated.emit("\n"+f"총 삭제된 이미지 수: {deleted_count}")
+            
+            
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
         images_dir = os.path.join(script_dir, 'Person_archive', person_name)
@@ -185,9 +169,14 @@ class CrawlingThread(QThread):
             except Exception as e:
                 pass
 
-        log_message = f"\n다운로드된 이미지 수: {saved_images_count - 1}"
-        self.log_updated.emit(log_message)
+
+        self.log_updated.emit(f"다운로드된 이미지 수: {saved_images_count - 1}")
         driver.quit()
+        
+        if saved_images_count -1 == 0:
+            self.seleniumCrawling(self, person_name, num_images)
+        else:
+            pass
 
         endtime = time.time()
         elapsed_time = endtime - starttime
@@ -220,12 +209,15 @@ class CrawlingThread(QThread):
                         os.remove(file_path)
                         deleted_count += 1
             log_message += "\n"+"2단계 필터링..(loaded face_cehck.py)"  
-            file_path = select_image_and_show(name)
 
-            self.detected_image_label.setPixmap(QPixmap(file_path).scaled(self.detected_image_label.width(),self.detected_image_label.height(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+            self.log_updated.emit("\n"+f"{name}의 얼굴 분석중")
+            representative_image_path = face_check.find_representative_image(name)
+            self.log_updated.emit("분석 완료. 대표 얼굴 지정")
+            self.detected_image_label.setPixmap(QPixmap(representative_image_path).scaled(self.detected_image_label.width(),self.detected_image_label.height(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+                        
+                        
+            fcdeleted_count,removelist = face_check.main(representative_image_path,name) 
 
-            fcdeleted_count,removelist = face_check.main(file_path,name) 
-        
             deleted_count += fcdeleted_count
             for removed_path in removelist:
                 log_message += f"\nrenmove: {removed_path}"
@@ -234,27 +226,6 @@ class CrawlingThread(QThread):
 
             self.log_updated.emit("\n"+f"총 삭제된 이미지 수: {deleted_count}")
 
-
-        def select_image_and_show(name):
-            root = tk.Tk()
-            root.withdraw()       
-            root.attributes('-topmost', True)
-            messagebox.showinfo("대표얼굴 선택",f"{name}의 대표 얼굴을 선택해주세요")
-
-            options = {
-                'title': f'{name}의 대표 얼굴을 선택하세요', 
-                'filetypes': [('이미지 파일', '*.jpg;*.jpeg;*.png;*.gif')],  
-                'initialdir': f'D:\FaceWorkspace\Person_archive\{name}',
-            }
-
-            file_path = filedialog.askopenfilename(**options)
-
-            if file_path:
-                pass
-            else:
-                select_image_and_show(name)
-
-            return file_path
 
 
         def search_and_download_images(person_name, api_key, cse_id, num_images):
@@ -295,7 +266,7 @@ class MainWindow(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.ui = Ui_carwling()
+        self.ui = Ui_crawling()
         self.ui.setupUi(self)
 
 

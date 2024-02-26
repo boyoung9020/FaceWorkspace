@@ -4,6 +4,11 @@ import time
 import face_check
 from tqdm import tqdm
 
+
+
+api_key = 'AIzaSyC9Va0fbqU86JvEOF2-ILwXdwPAf_DTtag'
+cse_id = 'f3a2ae7ae0c6341f4'
+
 def download_image(image_url, save_path):
     response = requests.get(image_url)
     if response.status_code == 200:
@@ -67,25 +72,13 @@ def search_and_download_images(person_name, api_key, cse_id, num_images):
     print("총 저장 시간:", elapsed_time_seconds, "초")
     remove_invalid_images(images_dir, person_name)
 
-def main(num_images):
+def main(name,num_images):
     api_key = 'AIzaSyC9Va0fbqU86JvEOF2-ILwXdwPAf_DTtag'
     cse_id = 'f3a2ae7ae0c6341f4'
     # search_term = input("검색어를 입력하세요: ")
     # num_images = int(input("다운로드할 이미지의 수를 입력하세요: "))
     # search_and_download_images(search_term, api_key, cse_id,  num_images)
-    num_images = num_images
-    txt_path = "./인물리스트.txt"
-    try:
-        with open(txt_path, 'r', encoding='utf-8') as file:
-            person_list = file.readlines()
-            for person in person_list:
-                person_name = person.strip()  
-                search_and_download_images(person_name, api_key, cse_id,  num_images)
-    except FileNotFoundError:
-        print(f"Error: 파일 '{txt_path}'을 찾을 수 없습니다.")
-    except Exception as e:
-        print(f"Error: {e}")
-
+    search_and_download_images(name, api_key, cse_id,  num_images)
 
 
 

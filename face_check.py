@@ -161,7 +161,12 @@ def add_known_face(face_image_path, name):
     # current_directory = os.getcwd()
     # saved_path = os.path.join(current_directory, f"{name}.jpg")
 
-
+    landmarks = face_recognition.face_landmarks(face_image)
+    # for idx, face_landmark in enumerate(landmarks):
+    #     print(f"얼굴 {idx+1}의 특징:")
+    #     for feature, coordinates in face_landmark.items():
+    #         print(f"{feature}: {coordinates}")
+    
     
     # cv2.imwrite(saved_path, cropped_face)
     # success = cv2.imwrite(saved_path, cropped_face)
@@ -220,19 +225,81 @@ def imwrite(filename, img, params=None):
 #     return file_path
 
 
-def main(file_path,name):
+def calculate_face_area(face_landmarks):
+    min_x, min_y = float('inf'), float('inf')
+    max_x, max_y = 0, 0
+    
+    for landmarks in face_landmarks:
+        for _, coordinates in landmarks.items():
+            for x, y in coordinates:
+                min_x = min(min_x, x)
+                min_y = min(min_y, y)
+                max_x = max(max_x, x)
+                max_y = max(max_y, y)
+    
+    width = max_x - min_x
+    height = max_y - min_y
+    
+    return width * height
+
+
+def find_representative_image(name):
+    directory = f'./Person_archive/{name}/'    
+    min_size=(500, 500)
+    
+    image_paths = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.jpg') or f.endswith('.png')]
+
+    representative_image_path = None
+    max_face_area_ratio = 0.0
+    
+    for image_path in image_paths:
+        image = face_recognition.load_image_file(image_path)
+        
+        height, width, _ = image.shape
+        
+        if height < min_size[0] or width < min_size[1]:
+            continue
+        
+        face_landmarks = face_recognition.face_landmarks(image)
+        
+        if face_landmarks and len(face_landmarks) == 1:
+            total_area = width * height
+            
+            face_area = calculate_face_area(face_landmarks)
+            
+            face_area_ratio = face_area / total_area
+            
+            if face_area_ratio > max_face_area_ratio:
+                max_face_area_ratio = face_area_ratio
+                representative_image_path = image_path
+
+    return representative_image_path
+
+
+
+
+
+
+
+
+
+
+def main(selected_image_path,name):
     deleted_image_count = 0  # 로컬 변수로 초기화
     removelist = []
 
     root = tk.Tk()
     root.withdraw()  
     root.attributes('-topmost', True)
-
+    directory_path = f'./Person_archive/{name}/'    
     # file_path = select_image_and_show(name)
+    
+    
 
-    detected_face_image = add_known_face(file_path, name)
 
-    directory_path = f'./Person_archive/{name}/'
+    add_known_face(selected_image_path, name)
+
+    
     image_paths = glob(os.path.join(directory_path, '*.jpg'))
 
     image_paths = sorted(image_paths, key=lambda x: (x.split('/')[-1].split('_')[0], int(x.split('/')[-1].split('_')[-1].split('.')[0])))
